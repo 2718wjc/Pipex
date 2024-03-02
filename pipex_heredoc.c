@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jaechoe <jaechoe@student.42seoul.k>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/01/20 18:52:30 by jaechoe           #+#    #+#             */
-/*   Updated: 2024/01/27 21:14:01 by jaechoe          ###   ########.fr       */
+/*   Created: 2024/03/02 18:09:38 by jaechoe           #+#    #+#             */
+/*   Updated: 2024/03/02 18:09:42 by jaechoe          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,35 @@ static int	gen_tmpfile(
 	}
 }
 
+char	*gen_tmpnam(const char *basename)
+{
+	char	*filename;
+	char	*suffix;
+	int		i;
+
+	filename = ft_strdup(basename);
+	i = 0;
+	while ((!filename || access(filename, F_OK) > -1) && ++i < 10000)
+	{
+		free(filename);
+		suffix = ft_itoa(i);
+		filename = ft_strjoin(basename, suffix);
+		free(suffix);
+	}
+	if (i == 10000)
+		err_handle("Cannot set tempfile name", NULL, 1);
+	return (filename);
+}
+
+/*
+ * 처음에는 파이프(가상파일)을 생성해서 입력내용을 저장하다가
+ * 입력이 PIPE_SIZE 보다 커지면 tmpfile 을 직접 생성해서
+ * 지금까지 파이프에 저장했던 것들을 모두 tmpfile 로 옮기고 파이프는 닫은 후,
+ * 이후의 입력도 계속 tmpfile 에 저장하는 식으로 구현했다.
+ * 파이프는 사이즈 제한이 있다. 여기서는 그냥 안전하게 1024byte 로 임의 설정해서 사용했는데,
+ * 실제 사이즈는 시스템마다 다르겠지만 적어도 1024byte 보다는 크다.
+ * 한편 tmpfile 을 직접 생성하는 경우에는 이후 적절히 삭제하는 과정이 필요하다.
+ */
 int	get_heredoc(const char *lmt, const char *tmpnam)
 {
 	t_vars_hdoc	v_h;

@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jaechoe <jaechoe@student.42seoul.k>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/01/27 19:23:11 by jaechoe           #+#    #+#             */
-/*   Updated: 2024/01/27 21:40:30 by jaechoe          ###   ########.fr       */
+/*   Created: 2024/03/02 18:12:45 by jaechoe           #+#    #+#             */
+/*   Updated: 2024/03/02 18:12:50 by jaechoe          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ static void	init_vars(t_vars_pipex *v, int argc, char **argv, char **envp)
 	v->path = get_path(envp);
 	if (!v->path)
 		err_handle(NULL, NULL, 1);
-	if (!ft_strncmp(argv[1], "here_doc", 8))
+	if (!ft_strncmp(argv[1], "here_doc", 9))
 	{
 		v->offset = 3;
 		v->tmpnam = gen_tmpnam("/tmp/pipex_tmp");
@@ -59,8 +59,7 @@ static void	init_vars(t_vars_pipex *v, int argc, char **argv, char **envp)
 	}
 	v->n_cmd = argc - v->offset - 1;
 	v->pid = malloc(v->n_cmd * sizeof(pid_t));
-	v->pipe_r = malloc(v->n_cmd * sizeof(int));
-	if (!v->pid || !v->pipe_r)
+	if (!v->pid)
 		err_handle(NULL, NULL, 1);
 }
 
@@ -71,13 +70,13 @@ static void	run_cmd(t_vars_pipex *v, int i, int *fd)
 
 	close(fd[0]);
 	if (i == 0)
-		fd[0] = get_iofile(v, i);
+		fd[0] = get_infile(v);
 	else
-		fd[0] = v->pipe_r[i];
+		fd[0] = fd[2];
 	if (i == v->n_cmd - 1)
 	{
 		close(fd[1]);
-		fd[1] = get_iofile(v, i);
+		fd[1] = set_outfile(v);
 	}
 	if (dup2(fd[0], 0) == -1)
 		err_handle(NULL, NULL, -1);
@@ -90,11 +89,20 @@ static void	run_cmd(t_vars_pipex *v, int i, int *fd)
 		err_handle(NULL, NULL, 1);
 }
 
+/*
+ * fd[0]: read-end
+ * fd[1]: write-end
+ * fd[2]: read-end 인 fd[0]을 임시로 저장해두는 용도.
+ * 다음 회차 때 fd[0]에는 새로운 read-end 가 저장되는데,
+ * 그 때 fd[2]에는 이전 read-end 가 담겨있기 때문에
+ * 분기 후 자식프로세스가 그곳을 통해 이전 자식프로세스의 데이터를 받을 수 있게 된다.
+ */
 static void	start_proc(t_vars_pipex *v)
 {
-	int	fd[2];
+	int	fd[3];
 	int	i;
 
+	fd[2] = -1;
 	i = 0;
 	while (i < v->n_cmd)
 	{
@@ -105,11 +113,9 @@ static void	start_proc(t_vars_pipex *v)
 			err_handle(NULL, NULL, -1);
 		else if (v->pid[i] > 0)
 		{
-			if (i > 0)
-				close(v->pipe_r[i]);
+			close(fd[2]);
 			close(fd[1]);
-			v->pipe_r[i + 1] = fd[0];
-			fd[0] = -1;
+			fd[2] = fd[0];
 		}
 		else
 			run_cmd(v, i, fd);

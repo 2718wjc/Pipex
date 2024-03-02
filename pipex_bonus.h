@@ -6,7 +6,7 @@
 /*   By: jaechoe <jaechoe@student.42seoul.k>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/27 22:00:06 by jaechoe           #+#    #+#             */
-/*   Updated: 2024/01/27 22:00:16 by jaechoe          ###   ########.fr       */
+/*   Updated: 2024/03/02 17:44:27 by jaechoe          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,6 @@ typedef struct s_vars_pipex
 	char	*tmpnam;
 	int		n_cmd;
 	pid_t	*pid;
-	int		*pipe_r;
 }	t_vars_pipex;
 
 typedef struct s_vars_hdoc
@@ -44,10 +43,11 @@ typedef struct s_vars_hdoc
 	size_t		len_lmt;
 }	t_vars_hdoc;
 
+char	*gen_tmpnam(const char *basename);
 int		get_heredoc(const char *lmt, const char *tmpnam);
 void	err_handle(char *errmsg, char *obj, int exitcode);
-char	*gen_tmpnam(const char *basename);
-int		get_iofile(t_vars_pipex *v, int i);
+int		get_infile(t_vars_pipex *v);
+int		set_outfile(t_vars_pipex *v);
 char	**get_cmd(char *cmdstr, char **path, char **exefile);
 
 #endif
